@@ -3,7 +3,7 @@ name = "agent-skill-wrapper"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "google-adk>=1.0.0",
+    "google-adk>=2.0.0",
     "google-cloud-aiplatform>=1.87.0",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
