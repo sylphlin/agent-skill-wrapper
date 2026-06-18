@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
-from google.genai.types import GenerateContentConfig, ThinkingConfig
+from google.genai import types
 from .skill_loader import load_skill
 from .tools import make_tools
 
@@ -34,9 +34,13 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
     return LlmAgent(
         name=agent_name,
         model=os.getenv("MODEL", "gemini-3.5-flash"),
-        generate_content_config=GenerateContentConfig(
-            thinking_config=ThinkingConfig(
-                thinking_budget=int(os.getenv("THINKING_BUDGET", "8192")),
+        generate_content_config=types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(
+                thinking_level=getattr(
+                    types.ThinkingLevel,
+                    os.getenv("THINKING_LEVEL", "MEDIUM").upper(),
+                    types.ThinkingLevel.MEDIUM,
+                ),
             ),
         ),
         instruction=skill_body + _TOOL_SUFFIX,
