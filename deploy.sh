@@ -29,16 +29,24 @@ fi
 
 # Install dependencies
 echo "Installing dependencies..."
-.venv/bin/pip install -q --upgrade "google-adk[gcp]" pyyaml python-dotenv
+.venv/bin/pip install --upgrade pip -q
+.venv/bin/pip install "google-adk[gcp]" -r requirements.txt -q
 
 # Deploy via ADK CLI
 AGENT_NAME=$(grep '^name:' skill/SKILL.md | head -1 | sed 's/name: *//')
 echo "Deploying '${AGENT_NAME}' to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
 
-.venv/bin/adk deploy agent_engine \
+# Build minimal staging directory (only what Agent Runtime needs)
+TMP_DIR=$(mktemp -d)
+trap "rm -rf ${TMP_DIR}" EXIT
+
+cp -r agent/ "${TMP_DIR}/"
+cp -r skill/ "${TMP_DIR}/"
+cp requirements.txt "${TMP_DIR}/"
+
+"${SCRIPT_DIR}/.venv/bin/adk" deploy agent_engine \
   --project="${GOOGLE_CLOUD_PROJECT}" \
   --region="${GOOGLE_CLOUD_LOCATION:-us-central1}" \
   --display_name="${AGENT_NAME}" \
   --artifact_service_uri="${STAGING_BUCKET}" \
-  --requirements_file=requirements.txt \
-  .
+  "${TMP_DIR}"
