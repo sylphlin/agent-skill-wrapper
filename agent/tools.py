@@ -35,6 +35,16 @@ def make_tools(skill_dir: Path, timeout: int = 60):
 
     def read_asset(path: str) -> str:
         """Read a text file from the skill directory."""
-        return "[stub] read_asset not yet implemented"
+        skill_dir_resolved = skill_dir.resolve()
+        asset_path = (skill_dir / path).resolve()
+        try:
+            asset_path.relative_to(skill_dir_resolved)
+        except ValueError:
+            return "[error] path traversal not allowed"
+
+        if not asset_path.exists():
+            return f"[error] file not found: {path}"
+
+        return asset_path.read_text(encoding="utf-8")
 
     return run_script, read_asset
