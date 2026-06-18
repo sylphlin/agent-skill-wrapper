@@ -51,7 +51,7 @@ remote = ReasoningEngine.create(
     app,
     requirements=[
         "google-adk>=2.0.0",
-        "google-cloud-aiplatform>=1.87.0",
+        "google-cloud-aiplatform[agent_engines]>=1.87.0",
         "pyyaml>=6.0",
         "python-dotenv>=1.0",
     ],
