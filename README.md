@@ -20,6 +20,42 @@ At startup, the agent loads `skill/SKILL.md` and uses its body as the LLM's syst
 
 The skill format follows the open [Agent Skills specification](https://agentskills.io/specification).
 
+## Usage Examples
+
+### Example 1: run_script
+
+The LLM can execute Python scripts bundled in `skill/scripts/`. Scripts are called by filename and receive the skill directory as working context.
+
+**SKILL.md instruction:**
+```markdown
+If the user asks for a report, use the `run_script` tool with script `generate_report.py`
+and pass the topic as the first argument.
+```
+
+**Conversation:**
+```
+User:  Generate a report on Q3 sales.
+Agent: [calls run_script("generate_report.py", ["Q3 sales"])]
+       Here is the Q3 sales report: ...
+```
+
+### Example 2: read_asset
+
+The LLM can read any file inside the skill directory — templates, reference docs, configuration — using `read_asset`.
+
+**SKILL.md instruction:**
+```markdown
+When the user asks for a greeting template, use the `read_asset` tool
+with path `assets/greeting_templates.md` and share the relevant template.
+```
+
+**Conversation:**
+```
+User:  Give me a formal greeting template in Japanese.
+Agent: [calls read_asset("assets/greeting_templates.md")]
+       Here's a formal Japanese greeting: こんにちは、{name}さん！
+```
+
 ## Quickstart
 
 ### 1. Clone and configure
@@ -37,9 +73,15 @@ GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=global
 ```
 
-### 2. Write your skill
+### 2. Drop in your skill
 
-Replace `skill/SKILL.md` with your own skill:
+Copy your skill package into the `skill/` directory:
+
+```bash
+cp -r path/to/your-skill/* skill/
+```
+
+At minimum, `skill/SKILL.md` must exist with a `name` and `description` in the frontmatter:
 
 ```markdown
 ---
@@ -48,11 +90,9 @@ description: What this agent does and when to use it.
 ---
 
 You are a helpful assistant that ...
-
-(Instructions for the LLM go here.)
 ```
 
-Add Python scripts to `skill/scripts/` and reference files to `skill/references/` or `skill/assets/` as needed.
+Optionally include `skill/scripts/` for Python scripts and `skill/assets/` or `skill/references/` for files the LLM can read on demand.
 
 ### 3. Deploy
 
@@ -115,10 +155,14 @@ No code changes required — the wrapper is skill-agnostic.
 ```
 agent-skill-wrapper/
 ├── agent/
+│   ├── __init__.py       # Exports root_agent for ADK loader
 │   ├── agent.py          # LlmAgent construction
 │   ├── skill_loader.py   # SKILL.md parser
 │   └── tools.py          # run_script and read_asset tools
 ├── skill/                # The bundled skill (replace to change agent behavior)
+│   ├── SKILL.md
+│   ├── scripts/          # Python scripts callable via run_script
+│   └── assets/           # Files readable via read_asset
 ├── deploy.sh             # Deployment script (Agent Runtime)
 └── pyproject.toml
 ```
