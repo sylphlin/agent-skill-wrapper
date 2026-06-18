@@ -90,6 +90,7 @@ All settings are read from `.env` (or environment variables):
 |----------|---------|-------------|
 | `GOOGLE_CLOUD_PROJECT` | required | GCP project ID |
 | `GOOGLE_CLOUD_LOCATION` | `us-central1` | Agent Runtime deployment region |
+| `STAGING_BUCKET` | required | GCS bucket for deployment artifacts (e.g. `gs://my-project-agent-staging`) |
 | `MODEL_LOCATION` | `global` | Gemini model endpoint region (newer models require `global`) |
 | `MODEL` | `gemini-3.5-flash` | Gemini model ID |
 | `THINKING_LEVEL` | `MEDIUM` | Thinking level: `LOW`, `MEDIUM`, `HIGH` |

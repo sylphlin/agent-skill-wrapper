@@ -11,9 +11,13 @@ if [ -f .env ]; then
   set +a
 fi
 
-# Validate required env var
+# Validate required env vars
 if [ -z "${GOOGLE_CLOUD_PROJECT:-}" ]; then
   echo "Error: GOOGLE_CLOUD_PROJECT is not set. Copy .env.example to .env and fill in your values." >&2
+  exit 1
+fi
+if [ -z "${STAGING_BUCKET:-}" ]; then
+  echo "Error: STAGING_BUCKET is not set (e.g. gs://your-project-id-agent-staging)." >&2
   exit 1
 fi
 
@@ -39,6 +43,7 @@ from agent.agent import root_agent
 vertexai.init(
     project=os.environ["GOOGLE_CLOUD_PROJECT"],
     location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+    staging_bucket=os.environ["STAGING_BUCKET"],
 )
 
 app = AdkApp(agent=root_agent, enable_tracing=True)
