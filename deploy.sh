@@ -28,5 +28,30 @@ echo "Installing dependencies..."
 .venv/bin/pip install -q -e .
 
 # Deploy
-echo "Deploying to Agent Engine (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-global})..."
-.venv/bin/python deploy.py
+echo "Deploying to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
+
+.venv/bin/python - <<'EOF'
+import os
+import vertexai
+from vertexai.preview.reasoning_engines import AdkApp, ReasoningEngine
+from agent.agent import root_agent
+
+vertexai.init(
+    project=os.environ["GOOGLE_CLOUD_PROJECT"],
+    location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+)
+
+app = AdkApp(agent=root_agent, enable_tracing=True)
+remote = ReasoningEngine.create(
+    app,
+    requirements=[
+        "google-adk>=2.0.0",
+        "google-cloud-aiplatform>=1.87.0",
+        "pyyaml>=6.0",
+        "python-dotenv>=1.0",
+    ],
+    display_name=root_agent.name,
+    description=f"Agent Skills agent: {root_agent.name}",
+)
+print(f"Deployed: {remote.resource_name}")
+EOF

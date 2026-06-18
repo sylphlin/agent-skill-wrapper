@@ -89,7 +89,8 @@ All settings are read from `.env` (or environment variables):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `GOOGLE_CLOUD_PROJECT` | required | GCP project ID |
-| `GOOGLE_CLOUD_LOCATION` | `global` | Agent Runtime region |
+| `GOOGLE_CLOUD_LOCATION` | `us-central1` | Agent Runtime deployment region |
+| `MODEL_LOCATION` | `global` | Gemini model endpoint region (newer models require `global`) |
 | `MODEL` | `gemini-3.5-flash` | Gemini model ID |
 | `THINKING_LEVEL` | `MEDIUM` | Thinking level: `LOW`, `MEDIUM`, `HIGH` |
 | `SCRIPT_TIMEOUT_SECONDS` | `60` | Script execution timeout |
@@ -117,8 +118,7 @@ agent-skill-wrapper/
 │   ├── skill_loader.py   # SKILL.md parser
 │   └── tools.py          # run_script and read_asset tools
 ├── skill/                # The bundled skill (replace to change agent behavior)
-├── deploy.py             # Agent Runtime deployment logic
-├── deploy.sh             # Deployment entrypoint
+├── deploy.sh             # Deployment script (Agent Runtime)
 └── pyproject.toml
 ```
 

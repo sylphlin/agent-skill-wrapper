@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+import vertexai
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.genai import types
@@ -8,6 +9,11 @@ from .skill_loader import load_skill
 from .tools import make_tools
 
 load_dotenv()
+
+vertexai.init(
+    project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+    location=os.getenv("MODEL_LOCATION", "global"),
+)
 
 _TOOL_SUFFIX = """
 ---
