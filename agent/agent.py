@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
@@ -23,8 +24,12 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
     timeout = int(os.getenv("SCRIPT_TIMEOUT_SECONDS", "60"))
     run_script, read_asset = make_tools(skill_dir, timeout=timeout)
 
-    # LlmAgent requires a valid Python identifier as name; sanitize hyphens
-    agent_name = metadata["name"].replace("-", "_")
+    # LlmAgent requires a valid Python identifier as name; sanitize all non-identifier chars
+    raw_name = metadata["name"]
+    sanitized = re.sub(r"[^a-zA-Z0-9]", "_", raw_name)
+    if sanitized and sanitized[0].isdigit():
+        sanitized = "_" + sanitized
+    agent_name = sanitized
 
     return LlmAgent(
         name=agent_name,
