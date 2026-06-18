@@ -27,9 +27,9 @@ if [ ! -d .venv ]; then
   python3 -m venv .venv
 fi
 
-# Install dependencies
+# Install dependencies (upgrade to ensure latest SDK versions)
 echo "Installing dependencies..."
-.venv/bin/pip install -q -e .
+.venv/bin/pip install -q --upgrade -e .
 
 # Deploy
 echo "Deploying to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
