@@ -1,7 +1,6 @@
 import os
 import re
 from pathlib import Path
-import vertexai
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.genai import types
@@ -10,11 +9,10 @@ from .tools import make_tools
 
 load_dotenv()
 
-if os.getenv("GOOGLE_CLOUD_PROJECT"):
-    vertexai.init(
-        project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-        location=os.getenv("MODEL_LOCATION", "global"),
-    )
+# Override GOOGLE_CLOUD_LOCATION for model calls (Dockerfile sets us-central1 for Agent Runtime,
+# but gemini-3.5-flash requires the global endpoint)
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+os.environ["GOOGLE_CLOUD_LOCATION"] = os.getenv("MODEL_LOCATION", "global")
 
 _TOOL_SUFFIX = """
 ---
