@@ -19,6 +19,9 @@ def make_tools(skill_dir: Path, timeout: int = 60):
         if not script_path.exists():
             return f"[error] script not found: {script}"
 
+        if script_path.suffix != ".py":
+            return f"[error] only Python scripts (.py) are supported: {script}"
+
         try:
             result = subprocess.run(
                 [sys.executable, str(script_path)] + list(args),
@@ -44,6 +47,9 @@ def make_tools(skill_dir: Path, timeout: int = 60):
 
         if not asset_path.exists():
             return f"[error] file not found: {path}"
+
+        if not asset_path.is_file():
+            return f"[error] not a file: {path}"
 
         return asset_path.read_text(encoding="utf-8")
 

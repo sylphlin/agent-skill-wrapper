@@ -53,3 +53,16 @@ def test_read_asset_returns_error_for_missing_file(skill_dir):
     _, read_asset = make_tools(skill_dir)
     result = read_asset("assets/missing.txt")
     assert result.startswith("[error] file not found")
+
+
+def test_read_asset_returns_error_for_directory(skill_dir):
+    _, read_asset = make_tools(skill_dir)
+    result = read_asset("scripts")
+    assert result.startswith("[error] not a file")
+
+
+def test_run_script_rejects_non_python_extension(skill_dir):
+    (skill_dir / "scripts" / "run.sh").write_text("echo hi")
+    run_script, _ = make_tools(skill_dir)
+    result = run_script("run.sh", [])
+    assert result.startswith("[error] only Python scripts")
