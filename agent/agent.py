@@ -10,10 +10,11 @@ from .tools import make_tools
 
 load_dotenv()
 
-vertexai.init(
-    project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-    location=os.getenv("MODEL_LOCATION", "global"),
-)
+if os.getenv("GOOGLE_CLOUD_PROJECT"):
+    vertexai.init(
+        project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location=os.getenv("MODEL_LOCATION", "global"),
+    )
 
 _TOOL_SUFFIX = """
 ---

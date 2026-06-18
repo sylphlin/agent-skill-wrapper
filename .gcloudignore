@@ -1,6 +1,8 @@
 .gcloudignore
 .git
 .venv
+.claude
+.pytest_cache
 __pycache__
 *.pyc
 *.pyo
@@ -8,4 +10,9 @@ dist
 *.egg-info
 docs
 tests
+README.md
+LICENSE
 .env
+.env.example
+deploy.sh
+pyproject.toml
