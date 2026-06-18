@@ -27,36 +27,17 @@ if [ ! -d .venv ]; then
   python3 -m venv .venv
 fi
 
-# Install dependencies (upgrade to ensure latest SDK versions)
+# Install dependencies
 echo "Installing dependencies..."
-.venv/bin/pip install -q --upgrade -e .
+.venv/bin/pip install -q --upgrade "google-adk[gcp]" pyyaml python-dotenv
 
-# Deploy
-echo "Deploying to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
+# Deploy via ADK CLI
+AGENT_NAME=$(grep '^name:' skill/SKILL.md | head -1 | sed 's/name: *//')
+echo "Deploying '${AGENT_NAME}' to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
 
-.venv/bin/python - <<'EOF'
-import os
-import vertexai
-from vertexai.preview.reasoning_engines import AdkApp, ReasoningEngine
-from agent.agent import root_agent
-
-vertexai.init(
-    project=os.environ["GOOGLE_CLOUD_PROJECT"],
-    location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-    staging_bucket=os.environ["STAGING_BUCKET"],
-)
-
-app = AdkApp(agent=root_agent, enable_tracing=True)
-remote = ReasoningEngine.create(
-    app,
-    requirements=[
-        "google-adk>=2.0.0",
-        "google-cloud-aiplatform[agent_engines]>=1.87.0",
-        "pyyaml>=6.0",
-        "python-dotenv>=1.0",
-    ],
-    display_name=root_agent.name,
-    description=f"Agent Skills agent: {root_agent.name}",
-)
-print(f"Deployed: {remote.resource_name}")
-EOF
+.venv/bin/adk deploy agent_engine \
+  --project="${GOOGLE_CLOUD_PROJECT}" \
+  --region="${GOOGLE_CLOUD_LOCATION:-us-central1}" \
+  --display_name="${AGENT_NAME}" \
+  --artifact_service_uri="${STAGING_BUCKET}" \
+  .
