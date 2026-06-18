@@ -36,17 +36,19 @@ echo "Installing dependencies..."
 AGENT_NAME=$(grep '^name:' skill/SKILL.md | head -1 | sed 's/name: *//')
 echo "Deploying '${AGENT_NAME}' to Google Cloud Agent Runtime (project: ${GOOGLE_CLOUD_PROJECT}, location: ${GOOGLE_CLOUD_LOCATION:-us-central1})..."
 
-# Build minimal staging directory (only what Agent Runtime needs)
-TMP_DIR=$(mktemp -d)
-trap "rm -rf ${TMP_DIR}" EXIT
+# Build minimal staging directory with a valid Python identifier name
+# (ADK uses the directory basename as agent name — dots are not allowed)
+STAGING_BASE="/tmp/agent_deploy_$$"
+mkdir -p "${STAGING_BASE}"
+trap "rm -rf ${STAGING_BASE}" EXIT
 
-cp -r agent/ "${TMP_DIR}/"
-cp -r skill/ "${TMP_DIR}/"
-cp requirements.txt "${TMP_DIR}/"
+cp -r agent/ "${STAGING_BASE}/"
+cp -r skill/ "${STAGING_BASE}/"
+cp requirements.txt "${STAGING_BASE}/"
 
 "${SCRIPT_DIR}/.venv/bin/adk" deploy agent_engine \
   --project="${GOOGLE_CLOUD_PROJECT}" \
   --region="${GOOGLE_CLOUD_LOCATION:-us-central1}" \
   --display_name="${AGENT_NAME}" \
   --artifact_service_uri="${STAGING_BUCKET}" \
-  "${TMP_DIR}"
+  "${STAGING_BASE}"
