@@ -40,5 +40,5 @@ echo "Deploying '${AGENT_NAME}' to Google Cloud Agent Runtime (project: ${GOOGLE
   --region="${GOOGLE_CLOUD_LOCATION:-us-central1}" \
   --display_name="${AGENT_NAME}" \
   --artifact_service_uri="${STAGING_BUCKET}" \
-  --requirements_path=requirements.txt \
+  --requirements_file=requirements.txt \
   .
