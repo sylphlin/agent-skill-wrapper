@@ -14,14 +14,11 @@ load_dotenv()
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
 os.environ["GOOGLE_CLOUD_LOCATION"] = os.getenv("MODEL_LOCATION", "global")
 
-_TOOL_SUFFIX = """
----
-You have access to the following tools when the skill instructions require them:
-- run_script: execute a Python script bundled with this skill
-- read_asset: read a reference or asset file bundled with this skill
-"""
-
 _DEFAULT_SKILL_DIR = Path(os.getenv("SKILL_DIR", str(Path(__file__).parent.parent / "skill")))
+
+
+def _has_files(directory: Path) -> bool:
+    return directory.is_dir() and any(p.is_file() for p in directory.rglob("*"))
 
 
 def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
@@ -36,7 +33,27 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
         sanitized = "_" + sanitized
     agent_name = sanitized
 
-    full_instruction = skill_body + _TOOL_SUFFIX
+    # Only register/advertise a tool if the skill actually bundles content for
+    # it. Mentioning a tool the skill has nothing to back (e.g. no scripts/)
+    # invites the LLM to hallucinate a plausible-sounding filename to call.
+    has_scripts = any((skill_dir / "scripts").glob("*.py"))
+    has_assets = _has_files(skill_dir / "assets") or _has_files(skill_dir / "references")
+
+    tools = []
+    tool_lines = []
+    if has_scripts:
+        tools.append(run_script)
+        tool_lines.append("- run_script: execute a Python script bundled with this skill")
+    if has_assets:
+        tools.append(read_asset)
+        tool_lines.append("- read_asset: read a reference or asset file bundled with this skill")
+
+    full_instruction = skill_body
+    if tool_lines:
+        full_instruction += (
+            "\n---\nYou have access to the following tools when the skill"
+            " instructions require them:\n" + "\n".join(tool_lines) + "\n"
+        )
 
     return LlmAgent(
         name=agent_name,
@@ -54,7 +71,7 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
         # text and skips {var} session-state templating — skill authors may
         # write literal curly braces (e.g. example placeholders) in SKILL.md.
         instruction=lambda ctx: full_instruction,
-        tools=[run_script, read_asset],
+        tools=tools,
     )
 
 
