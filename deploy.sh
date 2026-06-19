@@ -41,11 +41,15 @@ cp -r agent/ "${STAGING_BASE}/"
 cp -r skill/ "${STAGING_BASE}/"
 cp requirements.txt "${STAGING_BASE}/"
 
-# All user-facing config lives in .env (single source of truth). Forward it
-# into the staging dir so agent.py's load_dotenv() and ADK's own .env
-# handling both pick up MODEL / THINKING_LEVEL / SCRIPT_TIMEOUT_SECONDS etc.
+# .env is the single source of truth — forward it as-is to the runtime,
+# except deploy.sh's own bookkeeping (AGENT_ENGINE_ID, AGENT_CPU/MEMORY are
+# already consumed above; not meant for the running agent) and any
+# leftover empty-value line, which the Agent Platform API rejects outright
+# ("Required field is not set").
 if [ -f .env ]; then
-  cp .env "${STAGING_BASE}/.env"
+  grep -vE '^(AGENT_ENGINE_ID|AGENT_CPU|AGENT_MEMORY)=' .env \
+    | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=[[:space:]]*$' \
+    > "${STAGING_BASE}/.env"
 fi
 
 # Container resource_limits are derived from .env (AGENT_CPU / AGENT_MEMORY)
