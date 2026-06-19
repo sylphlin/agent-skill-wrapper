@@ -124,17 +124,22 @@ skill/
 
 ## Configuration
 
-All settings are read from `.env` (or environment variables):
+`.env` is the single source of truth for every tunable — deployment target, container resources, model, and agent behavior all live there. Nothing else needs editing.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `GOOGLE_CLOUD_PROJECT` | required | GCP project ID |
 | `GOOGLE_CLOUD_LOCATION` | `us-central1` | Agent Runtime deployment region |
 | `STAGING_BUCKET` | required | GCS bucket for deployment artifacts (e.g. `gs://my-project-agent-staging`) |
+| `AGENT_ENGINE_ID` | _(empty)_ | Auto-filled by `deploy.sh` after the first deploy. Leave empty to create a new instance; once set, redeploys update that instance (new revision). Clear it to force a new instance. |
+| `AGENT_CPU` | `4` | Container vCPU: `1`, `2`, `4`, `6`, `8` |
+| `AGENT_MEMORY` | `8Gi` | Container memory: `1Gi`–`32Gi` (must pair with a compatible `AGENT_CPU` — see [Cloud Run memory limits](https://cloud.google.com/run/docs/configuring/memory-limits)). Bump this if your skill processes large file uploads — the container is silently OOM-killed (no error log) if it runs out of memory. |
 | `MODEL_LOCATION` | `global` | Gemini model endpoint region (newer models require `global`) |
 | `MODEL` | `gemini-3.5-flash` | Gemini model ID |
 | `THINKING_LEVEL` | `MEDIUM` | Thinking level: `LOW`, `MEDIUM`, `HIGH` |
 | `SCRIPT_TIMEOUT_SECONDS` | `60` | Script execution timeout |
+
+`deploy.sh` reads these to build the container's resource limits and instance-targeting flags at deploy time, and forwards the whole `.env` into the deployed agent so `MODEL` / `THINKING_LEVEL` / `SCRIPT_TIMEOUT_SECONDS` take effect at runtime too.
 
 ## Switching Skills
 
@@ -148,7 +153,7 @@ cp -r path/to/new-skill/* skill/
 ./deploy.sh
 ```
 
-No code changes required — the wrapper is skill-agnostic.
+No code changes required — the wrapper is skill-agnostic. Redeploying reuses the existing Agent Runtime instance (see `AGENT_ENGINE_ID` above) unless you clear it first.
 
 ## Project Structure
 
@@ -164,6 +169,7 @@ agent-skill-wrapper/
 │   ├── scripts/          # Python scripts callable via run_script
 │   └── assets/           # Files readable via read_asset
 ├── deploy.sh             # Deployment script (Agent Runtime)
+├── .env                  # All config: deployment, container resources, model (gitignored)
 └── pyproject.toml
 ```
 

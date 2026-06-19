@@ -41,11 +41,38 @@ cp -r agent/ "${STAGING_BASE}/"
 cp -r skill/ "${STAGING_BASE}/"
 cp requirements.txt "${STAGING_BASE}/"
 
+# All user-facing config lives in .env (single source of truth). Forward it
+# into the staging dir so agent.py's load_dotenv() and ADK's own .env
+# handling both pick up MODEL / THINKING_LEVEL / SCRIPT_TIMEOUT_SECONDS etc.
+if [ -f .env ]; then
+  cp .env "${STAGING_BASE}/.env"
+fi
+
+# Container resource_limits are derived from .env (AGENT_CPU / AGENT_MEMORY)
+# rather than a separate static file — keeps all tunables in one place.
+cat > "${STAGING_BASE}/.agent_engine_config.json" <<EOF
+{
+  "resource_limits": {
+    "cpu": "${AGENT_CPU:-4}",
+    "memory": "${AGENT_MEMORY:-8Gi}"
+  }
+}
+EOF
+
 DEPLOY_LOG="$(mktemp)"
 trap "rm -rf ${STAGING_BASE} ${DEPLOY_LOG}" EXIT
 
 AGENT_NAME=$(grep '^name:' skill/SKILL.md | head -1 | sed 's/name: *//')
 REGION="${GOOGLE_CLOUD_LOCATION:-us-central1}"
+
+# Reuse the existing Agent Engine instance if AGENT_ENGINE_ID is set in .env,
+# so this becomes a new revision of the same service instead of a brand new
+# one. Clear AGENT_ENGINE_ID in .env to force a fresh instance.
+AGENT_ENGINE_ID_ARGS=()
+if [ -n "${AGENT_ENGINE_ID:-}" ]; then
+  AGENT_ENGINE_ID_ARGS=(--agent_engine_id="${AGENT_ENGINE_ID}")
+  echo "   - Updating existing instance: ${AGENT_ENGINE_ID}"
+fi
 
 echo ""
 echo "============================================================"
@@ -60,9 +87,21 @@ echo ""
   --region="${REGION}" \
   --display_name="${AGENT_NAME}" \
   --artifact_service_uri="${STAGING_BUCKET}" \
+  "${AGENT_ENGINE_ID_ARGS[@]}" \
   "${STAGING_BASE}" 2>&1 | tee "${DEPLOY_LOG}"
 
 REASONING_ENGINE_ID=$(grep -oE 'projects/[0-9]+/locations/[a-z0-9-]+/reasoningEngines/[0-9]+' "${DEPLOY_LOG}" | tail -1)
+
+# Persist the instance ID back into .env so the next deploy updates this same
+# instance instead of creating a new one.
+if [ -n "${REASONING_ENGINE_ID}" ] && [ -f .env ]; then
+  NEW_ID="${REASONING_ENGINE_ID##*/}"
+  if grep -q '^AGENT_ENGINE_ID=' .env; then
+    awk -v id="${NEW_ID}" '/^AGENT_ENGINE_ID=/{print "AGENT_ENGINE_ID="id; next} {print}' .env > .env.tmp && mv .env.tmp .env
+  else
+    echo "AGENT_ENGINE_ID=${NEW_ID}" >> .env
+  fi
+fi
 
 echo ""
 echo "============================================================"
