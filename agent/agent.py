@@ -36,6 +36,8 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
         sanitized = "_" + sanitized
     agent_name = sanitized
 
+    full_instruction = skill_body + _TOOL_SUFFIX
+
     return LlmAgent(
         name=agent_name,
         model=os.getenv("MODEL", "gemini-3.5-flash"),
@@ -48,7 +50,10 @@ def build_agent(skill_dir: Path = _DEFAULT_SKILL_DIR) -> LlmAgent:
                 ),
             ),
         ),
-        instruction=skill_body + _TOOL_SUFFIX,
+        # Passed as a callable (InstructionProvider) so ADK treats it as raw
+        # text and skips {var} session-state templating — skill authors may
+        # write literal curly braces (e.g. example placeholders) in SKILL.md.
+        instruction=lambda ctx: full_instruction,
         tools=[run_script, read_asset],
     )
 
